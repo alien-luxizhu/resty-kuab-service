@@ -1,5 +1,5 @@
 # resty-kuab-service
-金证kuab服务
+金证 交易 kuab.kdgp 服务
 
 只用5天搞定， 时间太仓促， 代码不够优雅， 有时间再优化。
 
