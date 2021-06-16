@@ -46,7 +46,7 @@ local function read_receive(ctx)
     local sock = ctx.sock
     if not sock then
         sock = ngx.socket.tcp()
-        sock:settimeouts(5000, 5000, 200)
+        sock:settimeouts(5000, 5000, 10)
         local ok, err = sock:connect(ctx.host, ctx.port)
         if not ok then
             print(" timer connect err: ", err)
@@ -152,7 +152,6 @@ end
 
 function _M:send(data)
     self.ctx.send_buffer:push(data)
-    ngx.sleep(0.001)
     return #data
 end
 

@@ -12,16 +12,29 @@ local tostring = tostring
 local select = select
 local ngx = ngx
 local table = table
-local co_yield = coroutine.yield
-local co_create = coroutine.create
-local co_status = coroutine.status
-local co_resume = coroutine.resume
+local co_yield = coroutine._yield
+local co_create = coroutine._create
+local co_status = coroutine._status
+local co_resume = coroutine._resume
 local codec = require "kuab.kdgp.packet.codec"
 local CodecStatus = require "kuab.kdgp.packet.CodecStatus"
 local parser = require "kuab.kdgp.packet.parser"
 
 local _M = {}
 local mt = { __index = _M }
+
+
+
+local co_wrap = function(func)
+    local co = co_create(func)
+    return function(...)
+        if co_status(co) == "suspended" then
+            return select(2, co_resume(co, ...))
+        else
+            return nil, "can't resume a " .. co_status(co) .. " coroutine"
+        end
+    end
+end
 
 function _M.receive_any(self)
     local sock = self.sock
@@ -45,9 +58,18 @@ _M.read_data = function(self)
     return self:receive_any()
 end
 
+local function co_read_data(self)
+    while true do
+        self = co_yield(self:receive_any())
+    end
+end
+
+
+ _M.read_data = co_wrap(co_read_data)
+
 function _M:on_data(bytes)
     self.sock.ctx.buffer = self.sock.ctx.buffer .. bytes
-    while #self.sock.ctx.buffer do
+    while #self.sock.ctx.buffer > 0 do
         local code, packet_length = codec.decode(self.sock.ctx.buffer)
         if not (code == CodecStatus.CODEC_OK) then
             break
